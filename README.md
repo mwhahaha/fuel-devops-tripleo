@@ -7,8 +7,8 @@ fuel-devops + tripleo = environments
 Usage
 -----
 
-1) setup [fuel-devops](https://docs.fuel-infra.org/fuel-dev/devops.html). Adjust
-   package names if necessary for RHEL/CentOS.
+1) setup [fuel-devops](https://docs.fuel-infra.org/fuel-dev/devops.html) using
+   master (3.x). Adjust package names if necessary for RHEL/CentOS.
    NOTE: Postgres configuration isn't exactly the same, so YMMV
 
 2) run go.sh
