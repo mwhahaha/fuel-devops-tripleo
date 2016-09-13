@@ -104,7 +104,7 @@ EOF
             ".nodes=(.nodes + [{ pm_addr:\"${PM_IPADDR}\", pm_password:\"${PM_KEY}\", pm_type:\"pxe_ssh\", pm_user:\"${PM_USER}\", cpu:${OVERCLOUD_NODE_CPU}, memory:${OVERCLOUD_NODE_MEMORY}, disk:${OVERCLOUD_VOLUME_SIZE}, arch:\"${ARCH}\", mac:\$macs | split (\"\n\")}])" \
             <<< $JSON)
     done
-    jq . <<< $JSON > "${SCRIPTS_DIR}/instackenv.json"
+    jq . <<< $JSON > "${CONFIGS_DIR}/instackenv.json"
 }
 
 wait_for_host() {
