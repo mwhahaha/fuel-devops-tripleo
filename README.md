@@ -24,6 +24,8 @@ Usage
 openstack undercloud install
 
 source ~/stackrc
+
+# add swap for overcloud nodes
 nova flavor-delete baremetal
 nova flavor-create --swap 2048 baremetal auto 4096 38 2
 nova flavor-key baremetal set capabilities:boot_option=local
@@ -37,7 +39,7 @@ openstack baremetal introspection bulk start
 # update dns server
 neutron subnet-update $(neutron subnet-list -c id -f value) --dns-nameserver 10.109.0.1
 
-
+# pull in the swap partition to leverage swap
 cat > ~/swap.yaml <<EOF
 resource_registry:
   OS::TripleO::AllNodesExtraConfig: /usr/share/openstack-tripleo-heat-templates/extraconfig/all_nodes/swap-partition.yaml
