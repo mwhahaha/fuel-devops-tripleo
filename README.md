@@ -7,44 +7,25 @@ fuel-devops + tripleo = environments
 Usage
 -----
 
-1) setup [fuel-devops](https://docs.fuel-infra.org/fuel-dev/devops.html) using
-   master (3.x). Adjust package names if necessary for RHEL/CentOS.
-   NOTE: Postgres configuration isn't exactly the same, so YMMV
+1) setup [fuel-devops](https://docs.openstack.org/fuel-docs/latest/devdocs/devops.html)
+   using master (3.x).  Adjust package names if necessary for RHEL/CentOS.
+   You can use sqlite instead of postgres (it's easier). NOTE: You may need
+   https://review.openstack.org/#/c/513517/
 
-2) run go.sh
+       export DEVOPS_WORKING_DIR=$(dirname $(readlink -f "$0"))
+       export DEVOPS_DB_NAME=$DEVOPS_WORKING_DIR/fuel-devops.db
+       export DEVOPS_DB_ENGINE="django.db.backends.sqlite3"
+       django-admin.py syncdb --settings=devops.settings
+       django-admin.py migrate devops --settings=devops.settings
 
-3) make sure to add the configs/id_rsa_virtpower.pub to your user's
-   authorized_keys file
+2) edit go.sh to update the .qcow locations for the undercloud
+   NOTE: tested with stock RHEL guest image downloaded from Red Hat
 
-4) ssh to undercloud
+3) run go.sh
 
-5) install the undercloud and deploy the overcloud
+4) ansible-playbook -i ansible-inventory undercloud-setup.yml
 
-```
-openstack undercloud install
+5) skip to step 4 of the install http://tripleo.org/install/installation/installation.html
+   NOTE: techincally if you used the provided undercloud.conf you could just
+   skip straight to step 5.
 
-source ~/stackrc
-
-# add swap for overcloud nodes
-nova flavor-delete baremetal
-nova flavor-create --swap 2048 baremetal auto 4096 38 2
-nova flavor-key baremetal set capabilities:boot_option=local
-
-openstack overcloud image upload
-openstack baremetal import instackenv.json
-openstack baremetal introspection bulk start
-#openstack overcloud node introspection
-
-
-# update dns server
-neutron subnet-update $(neutron subnet-list -c id -f value) --dns-nameserver 10.109.0.1
-
-# pull in the swap partition to leverage swap
-cat > ~/swap.yaml <<EOF
-resource_registry:
-  OS::TripleO::AllNodesExtraConfig: /usr/share/openstack-tripleo-heat-templates/extraconfig/all_nodes/swap-partition.yaml
-EOF
-
-# deeeplooooy
-openstack overcloud deploy --templates /usr/share/openstack-tripleo-heat-templates -e ~/swap.yaml
-```
