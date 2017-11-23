@@ -1,0 +1,6 @@
+---
+# tasks file for rhos-release
+- name: Run RHOS Release
+  shell: |
+      rhos-release {{ rhos_version|default('12') }} -p {{ rhos_puddle|default('latest') }}
+  become: yes

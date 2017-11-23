@@ -1,0 +1,4 @@
+---
+# tasks file for rhos-release
+- import_tasks: install.yml
+- import_tasks: setup-rhos.yml

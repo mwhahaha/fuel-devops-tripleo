@@ -8,15 +8,15 @@
 # - x86_64 is the arch used
 # - user has the virtpower ssh key added to it's authorized_keys file
 # - delorean current triplo undercloud/overcloud is used
-set -e
+set -ex
 
 #TEMPLATE SPECIFIC SETTINGS
 export ENV_NAME=${ENV_NAME:-"oooq"}
 export UNDERCLOUD_NODE_CPU=${UNDERCLOUD_NODE_CPU:-2}
-export UNDERCLOUD_NODE_MEMORY=${UNDERCLOUD_NODE_MEMORY:-4096}
-export UNDERCLOUD_VOLUME_SIZE=${SLAVE_VOLUME_SIZE:-50}
+export UNDERCLOUD_NODE_MEMORY=${UNDERCLOUD_NODE_MEMORY:-8192}
+export UNDERCLOUD_VOLUME_SIZE=${SLAVE_VOLUME_SIZE:-75}
 export OVERCLOUD_NODE_CPU=${OVERCLOUD_NODE_CPU:-1}
-export OVERCLOUD_NODE_MEMORY=${OVERCLOUD_NODE_MEMORY:-4096}
+export OVERCLOUD_NODE_MEMORY=${OVERCLOUD_NODE_MEMORY:-8192}
 export OVERCLOUD_VOLUME_SIZE=${OVERCLOUD_VOLUME_SIZE:-50}
 
 # local variables
@@ -27,8 +27,10 @@ SSHKEY_DEVOPS="${CONFIGS_DIR}/id_rsa_devops"
 SSHKEY_VIRTPOWER="${CONFIGS_DIR}/id_rsa_virtpower"
 CENTOS_IMAGE_URL=http://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud.qcow2
 CENTOS_IMAGE_PATH="${IMAGES_DIR}/CentOS-7-x86_64-GenericCloud.qcow2"
-UNDERCLOUD_IMAGE_URL=http://images.rdoproject.org/master/delorean/current-tripleo/stable/undercloud.qcow2
-OVERCLOUD_IMAGE_URL=http://images.rdoproject.org/master/delorean/current-tripleo/stable/overcloud-full.tar
+#UNDERCLOUD_IMAGE_URL=http://images.rdoproject.org/master/delorean/current-tripleo/stable/undercloud.qcow2
+#OVERCLOUD_IMAGE_URL=http://images.rdoproject.org/master/delorean/current-tripleo/stable/overcloud-full.tar
+#UNDERCLOUD_IMAGE_URL=http://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud-1708.qcow2
+UNDERCLOUD_IMAGE_URL=http://localhost:8000/rhel-server-7.4-x86_64-kvm.qcow2
 
 
 #############
@@ -54,6 +56,7 @@ prep_undercloud_users() {
         exit 1
     fi
     virt-customize -a $UNDERCLOUD_IMAGE_PATH \
+        --run-command "id -u $USER || useradd -m $USER" \
         --mkdir "${HOME_DIR}/.ssh" \
         --upload "${SSHKEY_DEVOPS}.pub:${HOME_DIR}/.ssh/authorized_keys" \
         --run-command "chown -R ${USER}:${GROUP} ${HOME_DIR}/.ssh/" \
@@ -64,13 +67,22 @@ prep_undercloud_users() {
 
 prep_undercloud_network() {
     virt-customize -a $UNDERCLOUD_IMAGE_PATH \
+        --run-command "echo 'disable_ec2_metadata: True' | tee /etc/cloud/cloud.cfg.d/10_datasources.cfg" \
+        --run-command "echo 'datasource_list: [\"ConfigDrive\",\"None\"]' | tee -a /etc/cloud/cloud.cfg.d/10_datasources.cfg" \
         --firstboot "${CONFIGS_DIR}/configure_base_network.sh"
+        #--run-command "touch /etc/cloud/cloud-init.disabled || true"\
+        #--run-command "echo 'network: {config: disabled}' > /etc/cloud/cloud.cfg.d/01-disable-network.cfg" \
 }
 
 get_host_ip() {
    #PRIVATE_NETWORK=$(dos.py net-list $ENV_NAME | grep private | awk '{print $2}')
    #TODO(aschultz):fix this to find the right ip
    echo '10.109.0.1'
+}
+
+get_undercloud_ip() {
+   UNDERCLOUD_IP=$(dos.py slave-ip-list oooq | grep public | tr ' ' '\n' | grep undercloud | awk -F',' '{print $2}')
+   echo $UNDERCLOUD_IP
 }
 
 generate_instackenv() {
@@ -113,12 +125,13 @@ wait_for_host() {
     local COUNTER=1
     while true;
     do
-        ping -c 1 $IP >/dev/null
+        ping -c 1 $IP >/dev/null && bash -c "</dev/tcp/$IP/22" 
         if [ $? -eq 0 ]; then
             return 0
         elif [ $COUNTER -eq $TIMEOUT ]; then
             return 1
         fi
+        sleep 10
         let COUNTER=COUNTER+1
     done
 }
@@ -159,29 +172,39 @@ dos.py node-start --node-name undercloud $ENV_NAME
 
 generate_instackenv
 
+undercloud_ip=$(get_undercloud_ip)
 # TODO(aschultz): ip address and exception handling
 set +e
-wait_for_host 10.109.0.2
+wait_for_host $undercloud_ip
 if [ $? -eq 0 ]; then
-scp -i ${SSHKEY_DEVOPS} "${CONFIGS_DIR}/undercloud.conf" stack@10.109.0.2:
-scp -i ${SSHKEY_DEVOPS} "${CONFIGS_DIR}/instackenv.json" stack@10.109.0.2:
+scp -i ${SSHKEY_DEVOPS} "${CONFIGS_DIR}/undercloud.conf" stack@$undercloud_ip:
+scp -i ${SSHKEY_DEVOPS} "${CONFIGS_DIR}/instackenv.json" stack@$undercloud_ip:
 cat <<EOF
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 You can now proceed with the undercloud setup...
-ssh -i ${SSHKEY_DEVOPS} stack@10.109.0.2
+ssh -i ${SSHKEY_DEVOPS} stack@$undercloud_ip
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 EOF
 
 else
+
 # TODO(aschultz): automate this better
 cat <<EOF
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Don't forget to copy config/undercloud.conf and instackenv.jsona to the
 undercloud before setting up the undercloud.
-scp -i ${SSHKEY_DEVOPS} configs/undercloud.conf stack@10.109.0.2:
-scp -i ${SSHKEY_DEVOPS} instackenv.json stack@10.109.0.2:
-ssh -i ${SSHKEY_DEVOPS} stack@10.109.0.2
+scp -i ${SSHKEY_DEVOPS} configs/undercloud.conf stack@$undercloud_ip:
+scp -i ${SSHKEY_DEVOPS} instackenv.json stack@$undercloud_ip:
+ssh -i ${SSHKEY_DEVOPS} stack@$undercloud_ip
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 EOF
 
 fi
+cat << EOF | tee ansible-inventory
+[undercloud]
+${undercloud_ip} ansible_ssh_private_key_file=${SSHKEY_DEVOPS} ansible_ssh_user=root
+EOF
+
+echo "ansible-inventory file written out!"
+
+

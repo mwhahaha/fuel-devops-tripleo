@@ -1,0 +1,4 @@
+---
+# tasks file for undercloud-prep
+- import_tasks: hostname.yml
+- import_tasks: user.yml

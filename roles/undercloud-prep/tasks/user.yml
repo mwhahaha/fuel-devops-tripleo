@@ -1,0 +1,11 @@
+---
+# tasks file for undercloud-prep
+# TODO(aschultz): make user configurable
+- name: Setup non-root User
+  block:
+    - name: add user to sudoers
+      lineinfile:
+        dest: "/etc/sudoers"
+        line: "stack ALL=(root) NOPASSWD:ALL"
+ 
+

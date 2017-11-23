@@ -1,0 +1,13 @@
+---
+# tasks file for undercloud-prep
+- hostname:
+    name: "{{ host_name|default('localhost') }}.{{ host_domain|default('localdomain') }}"
+
+- name: update host file
+  lineinfile:
+    dest: /etc/hosts
+    regexp: '{{ hostvars[item].ansible_default_ipv4.address }}.*{{ item }}$'
+    line: "{{ hostvars[item].ansible_default_ipv4.address }} {{ host_name|default('localhost') }} {{ host_name|default('localhost') }}.{{ host_domain|default('localdomain') }}"
+    state: present
+  become: yes
+  with_items: "{{ groups.all }}"

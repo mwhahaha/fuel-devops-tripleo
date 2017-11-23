@@ -1,0 +1,8 @@
+- hosts: undercloud
+  tasks:
+    - include_role:
+        name: rhos-release
+    - include_role:
+        name: system-update
+    - include_role:
+        name: undercloud-prep

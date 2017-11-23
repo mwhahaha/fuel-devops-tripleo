@@ -80,10 +80,10 @@ template:
 
               interfaces:
                 - label: enp0s3
-                  l2_network_device: private
+                  l2_network_device: public
                   interface_model: *interface_model
                 - label: enp0s4
-                  l2_network_device: public
+                  l2_network_device: private
                   interface_model: *interface_model
                 - label: enp0s5
                   l2_network_device: storage
@@ -120,10 +120,10 @@ template:
 
               interfaces:
                 - label: enp0s3
-                  l2_network_device: private
+                  l2_network_device: public
                   interface_model: *interface_model
                 - label: enp0s4
-                  l2_network_device: public
+                  l2_network_device: private
                   interface_model: *interface_model
                 - label: enp0s5
                   l2_network_device: storage

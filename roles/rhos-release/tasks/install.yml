@@ -1,0 +1,12 @@
+---
+# tasks file for rhos-release
+- name: get rhos-release rpm
+  get_url:
+    url: https://url.corp.redhat.com/rhos-release-latest-rpm
+    dest: /tmp/rhos-release.latest.rpm
+    validate_certs: false
+
+- name: install rhos-release rpm
+  yum:
+    name: /tmp/rhos-release.latest.rpm
+    state: present
