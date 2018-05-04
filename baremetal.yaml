@@ -11,7 +11,7 @@ template:
     env_name: !os_env ENV_NAME
 
     address_pools:
-      public-pool01:
+      ctlplane-pool01:
         net: *pool_default
         params:
           vlan_start: 1210
@@ -23,10 +23,12 @@ template:
             rack-01: [+2, +127]
       private-pool01:
         net: *pool_default
+      public-pool01:
+        net: *pool_default
       storage-pool01:
         net: *pool_default
-      management-pool01:
-        net: *pool_default
+      #management-pool01:
+      #  net: *pool_default
 
     groups:
       - name: default
@@ -40,33 +42,39 @@ template:
             use_host_cpu: !os_env DRIVER_USE_HOST_CPU, true
 
         network_pools:
-          public: public-pool01
+          ctlplane: ctlplane-pool01
           private: private-pool01
+          public: public-pool01
           storage: storage-pool01
-          management: management-pool01
+          #management: management-pool01
 
         l2_network_devices:
-          public:
-            address_pool: public-pool01
+          ctlplane:
+            address_pool: ctlplane-pool01
             dhcp: true
             forward:
               mode: nat
-
-          storage:
-            address_pool: storage-pool01
-            dhcp: false
-
-          management:
-            address_pool: management-pool01
-            dhcp: false
 
           private:
             address_pool: private-pool01
             dhcp: false
 
+          public:
+            address_pool: public-pool01
+            dhcp: false
+
+          storage:
+            address_pool: storage-pool01
+            dhcp: false
+
+          #management:
+          #  address_pool: management-pool01
+          #  dhcp: false
+
+
         nodes:
           - name: undercloud
-            role: ooo_undercloud
+            role: rhel
             params: &undercloud-params
               vcpu: !os_env UNDERCLOUD_NODE_CPU, 2
               memory: !os_env UNDERCLOUD_NODE_MEMORY, 8192
@@ -75,38 +83,38 @@ template:
               volumes:
                 - name: system
                   capacity: !os_env UNDERCLOUD_VOLUME_SIZE, 50
-                  source_image: !os_env UNDERCLOUD_IMAGE_PATH # http://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud.qcow2
+                  source_image: !os_env OS_IMAGE_PATH # http://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud.qcow2
                   format: qcow2
 
               interfaces:
                 - label: enp0s3
-                  l2_network_device: private
+                  l2_network_device: ctlplane
                   interface_model: *interface_model
                 - label: enp0s4
-                  l2_network_device: public
+                  l2_network_device: private
                   interface_model: *interface_model
                 - label: enp0s5
                   l2_network_device: storage
                   interface_model: *interface_model
                 - label: enp0s6
-                  l2_network_device: management
+                  l2_network_device: public
                   interface_model: *interface_model
               network_config:
                 enp0s3:
                   networks:
-                    - private
+                    - ctlplane
                 enp0s4:
                   networks:
-                    - public
+                    - private
                 enp0s5:
                   networks:
                     - storage
                 enp0s6:
                   networks:
-                    - management
+                    - public 
 
           - name: node-1
-            role: ooo_overcloud
+            role: rhel 
             params: &overcloud-params
               vcpu: !os_env OVERCLOUD_NODE_CPU, 1
               memory: !os_env OVERCLOUD_NODE_MEMORY, 8192
@@ -120,31 +128,31 @@ template:
 
               interfaces:
                 - label: enp0s3
-                  l2_network_device: private
+                  l2_network_device: ctlplane
                   interface_model: *interface_model
                 - label: enp0s4
-                  l2_network_device: public
+                  l2_network_device: private
                   interface_model: *interface_model
                 - label: enp0s5
                   l2_network_device: storage
                   interface_model: *interface_model
                 - label: enp0s6
-                  l2_network_device: management
+                  l2_network_device: public
                   interface_model: *interface_model
               network_config:
                 enp0s3:
                   networks:
-                    - private
+                    - ctlplane 
                 enp0s4:
                   networks:
-                    - public
+                    - private
                 enp0s5:
                   networks:
                     - storage
                 enp0s6:
                   networks:
-                    - management
+                    - public
 
           - name: node-2
-            role: ooo_overcloud
+            role: rhel 
             params: *overcloud-params

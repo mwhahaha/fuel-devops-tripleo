@@ -2,7 +2,7 @@
 cat >/etc/sysconfig/network-scripts/ifcfg-enp0s4 <<EOF
 DEVICE="enp0s4"
 BOOTPROTO="dhcp"
-ONBOOT="yes"
+ONBOOT="no"
 TYPE="Ethernet"
 USERCTL="yes"
 PEERDNS="yes"
