@@ -11,7 +11,7 @@ template:
     env_name: !os_env ENV_NAME
 
     address_pools:
-      management-pool01:
+      ctlplane-pool01:
         net: *pool_default
         params:
           vlan_start: 1210
@@ -21,14 +21,15 @@ template:
           ip_ranges:
             dhcp: [+2, +127]
             floating-01: [+128, -32]
-      ctlplane-pool01:
-        net: *pool_default
       private-pool01:
         net: *pool_default
       public-pool01:
         net: *pool_default
+        
       storage-pool01:
         net: *pool_default
+      #management-pool01:
+      #  net: *pool_default
 
     groups:
       - name: default
@@ -43,22 +44,16 @@ template:
             use_hugepages: !os_env DRIVER_USE_HUGEPAGES, false
 
         network_pools:
-          management: management-pool01
           ctlplane: ctlplane-pool01
           private: private-pool01
           public: public-pool01
           storage: storage-pool01
+          #management: management-pool01
 
         l2_network_devices:
-          management:
-            address_pool: management-pool01
-            dhcp: true
-            forward:
-              mode: nat
-
           ctlplane:
             address_pool: ctlplane-pool01
-            dhcp: false
+            dhcp: true
             forward:
               mode: nat
 
@@ -75,6 +70,10 @@ template:
           storage:
             address_pool: storage-pool01
             dhcp: false
+
+          #management:
+          #  address_pool: management-pool01
+          #  dhcp: false
 
 
         nodes:
@@ -93,18 +92,30 @@ template:
 
               interfaces:
                 - label: enp0s3
-                  l2_network_device: management
+                  l2_network_device: ctlplane
                   interface_model: *interface_model
                 - label: enp0s4
-                  l2_network_device: ctlplane
+                  l2_network_device: private
+                  interface_model: *interface_model
+                - label: enp0s5
+                  l2_network_device: storage
+                  interface_model: *interface_model
+                - label: enp0s6
+                  l2_network_device: public
                   interface_model: *interface_model
               network_config:
                 enp0s3:
                   networks:
-                    - management
+                    - ctlplane
                 enp0s4:
                   networks:
-                    - ctlplane
+                    - private
+                enp0s5:
+                  networks:
+                    - storage
+                enp0s6:
+                  networks:
+                    - public 
 
           - name: node-1
             role: rhel 

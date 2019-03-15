@@ -8,8 +8,8 @@ IMAGES_DIR="${SCRIPT_DIR}/images"
 CONFIGS_DIR="${SCRIPT_DIR}/configs"
 
 export ENV_NAME=${ENV_NAME:-"baremetal"}
-export UNDERCLOUD_NODE_CPU=${UNDERCLOUD_NODE_CPU:-2}
-export UNDERCLOUD_NODE_MEMORY=${UNDERCLOUD_NODE_MEMORY:-8192}
+export UNDERCLOUD_NODE_CPU=${UNDERCLOUD_NODE_CPU:-4}
+export UNDERCLOUD_NODE_MEMORY=${UNDERCLOUD_NODE_MEMORY:-16384}
 export UNDERCLOUD_VOLUME_SIZE=${SLAVE_VOLUME_SIZE:-50}
 export OVERCLOUD_NODE_CPU=${OVERCLOUD_NODE_CPU:-1}
 export OVERCLOUD_NODE_MEMORY=${OVERCLOUD_NODE_MEMORY:-8192}
@@ -29,7 +29,9 @@ fi
 
 echo "Injecting ssh key to root..."
 virt-customize -a $OS_IMAGE_PATH \
+    --root-password password:redhat \
     --ssh-inject root:file:${SSHKEY_ADMIN}.pub \
+    --upload ${CONFIGS_DIR}/cloud-init/95-disable-cloud-init-datasource.cfg:/etc/cloud/cloud.cfg.d/ \
     --selinux-relabel
 
 echo "Creating environment..."
