@@ -23,3 +23,15 @@ Usage
 4) ssh to undercloud
 
 5) do stuff
+
+6) You need to manually configure vbmc
+
+   yum install python-virtualbmc
+   ENV_NAME=rhel8
+   vbmc add rhel8_node-1 --port 6200 --username admin --password tripleo
+   vbmc add rhel8_node-2 --port 6201 --username admin --password tripleo
+   vbmc start rhel8_node-1
+   vbmc start rhel8_node-2
+
+
+   buildjson.sh can be used to generate the instackenv.json for the introspection
